@@ -199,19 +199,6 @@ class EffNetPredictor:
                         loss = split_val_loss0 + split_val_loss1 + split_val_loss2 + split_val_loss3
                         total_valid_loss += loss.item()
 
-                        # eval the acc
-                        onset_logits = 
-                        offset_logits = 
-                        _, pitch_class_pred = torch.max(
-                            pitch_class_logits.data, 1)
-                        _, pitch_octave_pred = torch.max(
-                            pitch_octave_logits.data, 1)
-
-                        onse 
-                        pitch_class_acc = ((pitch_class_pred == pitch_class).sum()).cpu().numpy()
-                        pitch_octave_acc = ((pitch_octave_pred == pitch_octave).sum()).cpu().numpy()
-
-
                 # Save model
                 save_dict = self.model.state_dict()
                 target_model_path = Path(
