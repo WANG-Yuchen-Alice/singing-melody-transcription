@@ -19,6 +19,7 @@ import numpy as np
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 warnings.filterwarnings('ignore')
 
+
 def notes2mid(notes):
     mid = mido.MidiFile()
     track = mido.MidiTrack()
@@ -31,41 +32,46 @@ def notes2mid(notes):
 
     cur_total_tick = 0
 
-
     for note in notes:
         if note[2] == 0:
             continue
         note[2] = int(round(note[2]))
 
-        ticks_since_previous_onset = int(mido.second2tick(note[0], ticks_per_beat=480, tempo=new_tempo))
-        ticks_current_note = int(mido.second2tick(note[1]-0.0001, ticks_per_beat=480, tempo=new_tempo))
+        ticks_since_previous_onset = int(mido.second2tick(
+            note[0], ticks_per_beat=480, tempo=new_tempo))
+        ticks_current_note = int(mido.second2tick(
+            note[1]-0.0001, ticks_per_beat=480, tempo=new_tempo))
         note_on_length = ticks_since_previous_onset - cur_total_tick
         note_off_length = ticks_current_note - note_on_length - cur_total_tick
 
-        track.append(mido.Message('note_on', note=note[2], velocity=100, time=note_on_length))
-        track.append(mido.Message('note_off', note=note[2], velocity=100, time=note_off_length))
+        track.append(mido.Message(
+            'note_on', note=note[2], velocity=100, time=note_on_length))
+        track.append(mido.Message(
+            'note_off', note=note[2], velocity=100, time=note_off_length))
         cur_total_tick = cur_total_tick + note_on_length + note_off_length
 
     return mid
-    
+
 
 def convert_to_midi(predicted_result, song_id, output_path):
     to_convert = predicted_result[song_id]
     mid = notes2mid(to_convert)
     mid.save(output_path)
 
+
 def predict_one_song(predictor, wav_path, song_id, results, do_svs, tomidi, output_path, onset_thres, offset_thres):
     # os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
     test_dataset = SeqDataset(wav_path, song_id, do_svs=do_svs)
 
-    results = predictor.predict(test_dataset, results=results, onset_thres=onset_thres, offset_thres=offset_thres)
+    results = predictor.predict(
+        test_dataset, results=results, onset_thres=onset_thres, offset_thres=offset_thres)
     if tomidi:
         convert_to_midi(results, song_id, output_path)
     return results
 
 
 def predict_whole_dir(predictor, test_dir, do_svs, output_json_path, onset_thres, offset_thres):
-    
+
     results = {}
     for song_dir in sorted(Path(test_dir).iterdir()):
         wav_path = str(song_dir / 'Vocal.wav')
@@ -74,8 +80,8 @@ def predict_whole_dir(predictor, test_dir, do_svs, output_json_path, onset_thres
         if not os.path.isfile(wav_path):
             continue
 
-        results = predict_one_song(predictor, wav_path, song_id, results, do_svs=do_svs
-            , tomidi=False, output_path=None, onset_thres=float(args.onset_thres), offset_thres=float(args.offset_thres))
+        results = predict_one_song(predictor, wav_path, song_id, results, do_svs=do_svs, tomidi=False,
+                                   output_path=None, onset_thres=float(args.onset_thres), offset_thres=float(args.offset_thres))
 
     with open(output_json_path, 'w') as f:
         output_string = json.dumps(results)
@@ -87,7 +93,7 @@ def main(args):
     input_path = args.input
     output_path = args.output
 
-    device= "cpu"
+    device = "cpu"
     if torch.cuda.is_available():
         device = args.device
     # print ("use", device)
@@ -101,14 +107,15 @@ def main(args):
     print('Forwarding model...')
 
     if os.path.isfile(input_path):
-        predict_one_song(my_predictor, input_path, song_id, results, do_svs=do_svs
-            , tomidi=True, output_path=output_path, onset_thres=float(args.onset_thres), offset_thres=float(args.offset_thres))
+        predict_one_song(my_predictor, input_path, song_id, results, do_svs=do_svs, tomidi=True,
+                         output_path=output_path, onset_thres=float(args.onset_thres), offset_thres=float(args.offset_thres))
 
     elif os.path.isdir(input_path):
-        predict_whole_dir(my_predictor, input_path, do_svs=do_svs
-            , output_json_path=output_path, onset_thres=float(args.onset_thres), offset_thres=float(args.offset_thres))
+        predict_whole_dir(my_predictor, input_path, do_svs=do_svs, output_json_path=output_path,
+                          onset_thres=float(args.onset_thres), offset_thres=float(args.offset_thres))
     else:
-        print ("\"input\" argument is not a valid path/directory, no audio is trancribed......")
+        print(
+            "\"input\" argument is not a valid path/directory, no audio is trancribed......")
 
 
 if __name__ == '__main__':
@@ -130,11 +137,16 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('input', help="input audio/folder path")
     parser.add_argument('output', help="output MIDI/JSON path")
-    parser.add_argument('-p', '--model_path', default="models/1005_e_4", help="model path")
-    parser.add_argument('-s', '--svs', action="store_true", help="use Spleeter to extract vocal or not")
-    parser.add_argument('-on', "--onset_thres", default=0.4, help="onset threshold")
-    parser.add_argument('-off', "--offset_thres", default=0.5, help="silence threshold")
-    parser.add_argument('-d', "--device", default="cuda:0", help="device to use if cuda is available")
+    parser.add_argument('-p', '--model_path',
+                        default="models/effnet_10", help="model path")
+    parser.add_argument('-s', '--svs', action="store_true",
+                        help="use Spleeter to extract vocal or not")
+    parser.add_argument('-on', "--onset_thres",
+                        default=0.4, help="onset threshold")
+    parser.add_argument('-off', "--offset_thres",
+                        default=0.5, help="silence threshold")
+    parser.add_argument('-d', "--device", default="cpu",
+                        help="device to use if cuda is available")
 
     args = parser.parse_args()
 
