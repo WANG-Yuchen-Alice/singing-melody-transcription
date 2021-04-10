@@ -67,6 +67,11 @@ def predict_one_song(predictor, wav_path, song_id, results, do_svs, tomidi, outp
         test_dataset, results=results, onset_thres=onset_thres, offset_thres=offset_thres)
     if tomidi:
         convert_to_midi(results, song_id, output_path)
+
+    with open('trans.json', 'w') as f:
+        output_string = json.dumps(results)
+        f.write(output_string)
+
     return results
 
 
